@@ -1,0 +1,452 @@
+# Crave Kitchen Backend API HTTP Calls
+# Base URL: http://localhost:8000/api
+
+### Variables
+@baseUrl = http://localhost:8000/api
+@token = Bearer 3|FK7kYGNyEzClQ7fhojDObbNNbUyzDXTEJ60DiCr27c8cb00e
+
+###################
+# AUTHENTICATION
+###################
+
+### Login (Public)
+POST {{baseUrl}}/auth/login HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+    "email": "admin@example.com",
+    "password": "A1000B2000"
+}
+
+### Get Current User Info
+GET {{baseUrl}}/auth/me HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Logout
+POST {{baseUrl}}/auth/logout HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Legacy User Route (for compatibility)
+GET {{baseUrl}}/user HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+###################
+# CUSTOMERS CRUD
+###################
+
+### Get All Customers (with pagination and filters)
+GET {{baseUrl}}/admin/customers?per_page=15&search=John&sort_by=name&sort_order=asc HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Single Customer
+GET {{baseUrl}}/admin/customers/2 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Create Customer
+POST {{baseUrl}}/admin/customers HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "address": "123 Main Street, City, State 12345"
+}
+
+### Update Customer
+PUT {{baseUrl}}/admin/customers/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "name": "John Smith",
+    "email": "john.smith@example.com",
+    "phone": "+1234567891",
+    "address": "456 Oak Avenue, City, State 12345"
+}
+
+### Delete Customer (Hard Delete)
+DELETE {{baseUrl}}/admin/customers/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Soft Delete Customer
+DELETE {{baseUrl}}/admin/customers/1/soft-delete HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Customer Statistics
+GET {{baseUrl}}/admin/customers/1/statistics HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Search Customers
+GET {{baseUrl}}/admin/search/customers?query=john&has_orders=true&min_spent=100 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+###################
+# ITEMS CRUD
+###################
+
+### Get All Items (with pagination and filters)
+GET {{baseUrl}}/admin/items?per_page=15&category=food&is_active=true&sort_by=name HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Single Item
+GET {{baseUrl}}/admin/items/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Create Item
+POST {{baseUrl}}/admin/items HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "name": "Chicken Rice",
+    "description": "Delicious steamed chicken with fragrant rice",
+    "price": 12.50,
+    "category": "Main Course",
+    "stock_quantity": 50,
+    "is_active": true
+}
+
+### Update Item
+PUT {{baseUrl}}/admin/items/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "name": "Premium Chicken Rice",
+    "description": "Premium steamed chicken with fragrant rice and vegetables",
+    "price": 15.00,
+    "category": "Main Course",
+    "stock_quantity": 30,
+    "is_active": true
+}
+
+### Delete Item
+DELETE {{baseUrl}}/admin/items/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Item Categories
+GET {{baseUrl}}/admin/items-categories HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Update Item Stock
+PUT {{baseUrl}}/admin/items/1/stock HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "stock_quantity": 25,
+    "operation": "set"
+}
+
+### Check Item Availability
+POST {{baseUrl}}/admin/items/check-availability HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "items": [
+        {"id": 1, "quantity": 2},
+        {"id": 2, "quantity": 1}
+    ]
+}
+
+### Get Low Stock Items
+GET {{baseUrl}}/admin/items-low-stock?threshold=10 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Search Items
+GET {{baseUrl}}/admin/search/items?query=rice&category=main&min_price=10&max_price=20 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+###################
+# ORDERS CRUD
+###################
+
+### Get All Orders (with pagination and filters)
+GET {{baseUrl}}/admin/orders?per_page=15 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Single Order
+GET {{baseUrl}}/admin/orders/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Create Order
+POST {{baseUrl}}/admin/orders HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "customer_id": 1,
+    "items": [
+        {
+            "item_id": 1,
+            "quantity": 2,
+            "unit_price": 12.50
+        },
+        {
+            "item_id": 2,
+            "quantity": 1,
+            "unit_price": 8.00
+        }
+    ],
+    "discount_type": "percentage",
+    "discount_value": 10,
+    "notes": "Customer requested extra rice"
+}
+
+### Update Order
+PUT {{baseUrl}}/admin/orders/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "customer_id": 1,
+    "items": [
+        {
+            "item_id": 1,
+            "quantity": 3,
+            "unit_price": 12.50
+        }
+    ],
+    "discount_type": "fixed",
+    "discount_value": 5.00,
+    "notes": "Updated quantity"
+}
+
+### Delete Order
+DELETE {{baseUrl}}/admin/orders/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Orders Summary
+GET {{baseUrl}}/admin/orders-summary?period=month&status=completed HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Update Order Status
+PUT {{baseUrl}}/admin/orders/21/status HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "status": "completed",
+    "notes": "Order delivered successfully"
+}
+
+### Update Order Payment Status
+PUT {{baseUrl}}/admin/orders/1/payment-status HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "payment_status": "paid",
+    "notes": "Payment received in full"
+}
+
+### Search Orders
+GET {{baseUrl}}/admin/search/orders?query=ORD001&customer_id=1&status=pending&from_date=2025-01-01 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+###################
+# PAYMENTS
+###################
+
+### Get Order Payments
+GET {{baseUrl}}/admin/orders/1/payments HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Single Payment
+GET {{baseUrl}}/admin/orders/1/payments/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Create Payment
+POST {{baseUrl}}/admin/orders/2/payments HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "amount": 25.00,
+    "payment_method": "cash",
+    "notes": "Partial payment received",
+    "payment_date": "2025-10-13T10:30:00Z"
+}
+
+### Update Payment
+PUT {{baseUrl}}/admin/orders/2/payments/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "amount": 30.00,
+    "payment_method": "card",
+    "notes": "Updated payment amount",
+    "payment_date": "2025-10-13T10:30:00Z"
+}
+
+### Delete Payment
+DELETE {{baseUrl}}/admin/orders/1/payments/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Payment Summary for Order
+GET {{baseUrl}}/admin/orders/2/payments/summary HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+###################
+# DASHBOARD
+###################
+
+### Get Dashboard Data
+GET {{baseUrl}}/admin/dashboard HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Get Recent Activity
+GET {{baseUrl}}/admin/dashboard/recent-activity?limit=10 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+###################
+# GLOBAL SEARCH
+###################
+
+### Global Search
+GET {{baseUrl}}/admin/search/global?query=chicken&limit=20 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Search Suggestions
+GET {{baseUrl}}/admin/search/suggestions?query=chi&type=items HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+###################
+# ERROR LOGGING
+###################
+
+### Log Error (Authenticated)
+POST {{baseUrl}}/admin/errors HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "message": "Database connection failed",
+    "level": "error",
+    "context": {
+        "user_id": 1,
+        "action": "create_order",
+        "trace": "Stack trace here..."
+    }
+}
+
+### Log Error Batch (Authenticated)
+POST {{baseUrl}}/admin/errors/batch HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+{
+    "errors": [
+        {
+            "message": "Validation failed",
+            "level": "warning",
+            "context": {"field": "email"}
+        },
+        {
+            "message": "API timeout",
+            "level": "error",
+            "context": {"endpoint": "/api/orders"}
+        }
+    ]
+}
+
+### Get Error Statistics
+GET {{baseUrl}}/admin/errors/stats?period=week&level=error HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: {{token}}
+
+### Log Public Error (Unauthenticated)
+POST {{baseUrl}}/errors/public HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+    "message": "Frontend JavaScript error",
+    "level": "error",
+    "context": {
+        "url": "/dashboard",
+        "browser": "Chrome 118.0.0.0",
+        "error": "TypeError: Cannot read property 'length' of undefined"
+    }
+}
+
+### Health Check
+GET {{baseUrl}}/errors/health HTTP/1.1
+Content-Type: application/json
+Accept: application/json
