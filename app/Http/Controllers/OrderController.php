@@ -27,6 +27,10 @@ class OrderController extends BaseApiController
         // Clear the order cache timestamp to invalidate all order caches
         cache()->forget('orders_cache_timestamp');
         cache()->put('orders_cache_timestamp', now()->timestamp);
+
+        // Clear dashboard cache
+        cache()->forget('dashboard_metrics');
+        cache()->forget('dashboard_recent_activity');
     }
 
     /**
