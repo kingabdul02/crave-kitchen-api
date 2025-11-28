@@ -20,6 +20,16 @@ class OrderController extends BaseApiController
     }
 
     /**
+     * Clear all order list caches.
+     */
+    protected function clearOrderCaches(): void
+    {
+        // Clear the order cache timestamp to invalidate all order caches
+        cache()->forget('orders_cache_timestamp');
+        cache()->put('orders_cache_timestamp', now()->timestamp);
+    }
+
+    /**
      * Display a listing of orders with filtering and pagination.
      */
     public function index(Request $request): JsonResponse
@@ -46,8 +56,11 @@ class OrderController extends BaseApiController
         $perPage = $request->get('per_page', 15);
         $page = $request->get('page', 1);
 
-        // Create cache key based on filters, sorting, and pagination
-        $cacheKey = 'orders_list_' . md5(serialize($filters) . serialize($sorting) . $perPage . $page);
+        // Get cache timestamp for invalidation
+        $cacheTimestamp = cache()->get('orders_cache_timestamp', 0);
+
+        // Create cache key based on filters, sorting, pagination, and timestamp
+        $cacheKey = 'orders_list_' . md5(serialize($filters) . serialize($sorting) . $perPage . $page . $cacheTimestamp);
 
         // Cache for 2 minutes for frequently accessed order lists
         $orders = cache()->remember($cacheKey, 120, function () use ($filters, $sorting, $perPage) {
@@ -67,6 +80,9 @@ class OrderController extends BaseApiController
     {
         try {
             $order = $this->orderService->createOrder($request->validated());
+
+            // Invalidate order list cache
+            $this->clearOrderCaches();
 
             return $this->createdResponse(
                 new OrderResource($order),
@@ -98,6 +114,9 @@ class OrderController extends BaseApiController
         try {
             $updatedOrder = $this->orderService->updateOrder($order, $request->validated());
 
+            // Invalidate order list cache
+            $this->clearOrderCaches();
+
             return $this->successResponse(
                 new OrderResource($updatedOrder),
                 'Order updated successfully'
@@ -114,6 +133,9 @@ class OrderController extends BaseApiController
     {
         try {
             $this->orderService->deleteOrder($order);
+
+            // Invalidate order list cache
+            $this->clearOrderCaches();
 
             return $this->successResponse(
                 null,
@@ -149,6 +171,9 @@ class OrderController extends BaseApiController
         try {
             $updatedOrder = $this->orderService->updateOrderStatus($order, $request->status);
 
+            // Invalidate order list cache
+            $this->clearOrderCaches();
+
             return $this->successResponse(
                 new OrderResource($updatedOrder),
                 'Order status updated successfully'
@@ -169,6 +194,9 @@ class OrderController extends BaseApiController
 
         try {
             $updatedOrder = $this->orderService->updatePaymentStatus($order, $request->payment_status);
+
+            // Invalidate order list cache
+            $this->clearOrderCaches();
 
             return $this->successResponse(
                 new OrderResource($updatedOrder),
@@ -194,7 +222,7 @@ class OrderController extends BaseApiController
             ]);
 
             // Invalidate cache
-            cache()->tags(['orders'])->flush();
+            $this->clearOrderCaches();
 
             return $this->successResponse(
                 new OrderResource($order->fresh(['customer', 'orderItems.item', 'payments'])),

@@ -21,6 +21,16 @@ class PaymentController extends BaseApiController
     }
 
     /**
+     * Invalidate order cache.
+     */
+    protected function invalidateOrderCache(): void
+    {
+        // Clear the order cache timestamp to invalidate all order caches
+        cache()->forget('orders_cache_timestamp');
+        cache()->put('orders_cache_timestamp', now()->timestamp);
+    }
+
+    /**
      * Display a listing of payments for a specific order.
      */
     public function index(Request $request, Order $order): JsonResponse
@@ -42,6 +52,9 @@ class PaymentController extends BaseApiController
     {
         try {
             $payment = $this->paymentService->createPayment($order, $request->validated());
+
+            // Invalidate order cache so the new payment shows up in the order list
+            $this->invalidateOrderCache();
 
             return $this->successResponse(
                 new PaymentResource($payment),
@@ -82,6 +95,9 @@ class PaymentController extends BaseApiController
         try {
             $updatedPayment = $this->paymentService->updatePayment($payment, $request->validated());
 
+            // Invalidate order cache
+            $this->invalidateOrderCache();
+
             return $this->successResponse(
                 new PaymentResource($updatedPayment),
                 'Payment updated successfully'
@@ -103,6 +119,9 @@ class PaymentController extends BaseApiController
 
         try {
             $this->paymentService->deletePayment($payment);
+
+            // Invalidate order cache
+            $this->invalidateOrderCache();
 
             return $this->successResponse(
                 null,
