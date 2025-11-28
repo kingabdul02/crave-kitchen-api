@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\DashboardService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DashboardController extends BaseApiController
 {
@@ -17,10 +18,13 @@ class DashboardController extends BaseApiController
     /**
      * Get dashboard metrics and analytics
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            $metrics = $this->dashboardService->getDashboardMetrics();
+            $dateFrom = $request->get('date_from');
+            $dateTo = $request->get('date_to');
+
+            $metrics = $this->dashboardService->getDashboardMetrics($dateFrom, $dateTo);
 
             return $this->successResponse($metrics, 'Dashboard metrics retrieved successfully');
         } catch (\Exception $e) {

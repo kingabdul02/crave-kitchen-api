@@ -15,17 +15,26 @@ class DashboardService
     /**
      * Get comprehensive dashboard metrics with caching
      */
-    public function getDashboardMetrics(): array
+    public function getDashboardMetrics(?string $dateFrom = null, ?string $dateTo = null): array
     {
-        return Cache::remember('dashboard_metrics', 300, function () { // Cache for 5 minutes
-            $currentPeriod = $this->getCurrentPeriodMetrics();
-            $previousPeriod = $this->getPreviousPeriodMetrics();
+        $startDate = $dateFrom ? Carbon::parse($dateFrom)->startOfDay() : Carbon::now()->subDays(30)->startOfDay();
+        $endDate = $dateTo ? Carbon::parse($dateTo)->endOfDay() : Carbon::now()->endOfDay();
+
+        // Get cache timestamp for invalidation
+        $cacheTimestamp = Cache::get('dashboard_cache_timestamp', 0);
+        
+        // Create cache key based on date range and timestamp
+        $cacheKey = 'dashboard_metrics_' . $startDate->timestamp . '_' . $endDate->timestamp . '_' . $cacheTimestamp;
+
+        return Cache::remember($cacheKey, 300, function () use ($startDate, $endDate) { // Cache for 5 minutes
+            $currentPeriod = $this->getCurrentPeriodMetrics($startDate, $endDate);
+            $previousPeriod = $this->getPreviousPeriodMetrics($startDate, $endDate);
 
             return [
                 'current_period' => $currentPeriod,
                 'previous_period' => $previousPeriod,
                 'trends' => $this->calculateTrends($currentPeriod, $previousPeriod),
-                'charts_data' => $this->getChartsData(),
+                'charts_data' => $this->getChartsData($startDate, $endDate),
                 'last_updated' => now()->toISOString()
             ];
         });
@@ -36,7 +45,11 @@ class DashboardService
      */
     public function getRecentActivity(): array
     {
-        return Cache::remember('dashboard_recent_activity', 60, function () { // Cache for 1 minute
+        // Get cache timestamp for invalidation
+        $cacheTimestamp = Cache::get('dashboard_cache_timestamp', 0);
+        $cacheKey = 'dashboard_recent_activity_' . $cacheTimestamp;
+
+        return Cache::remember($cacheKey, 60, function () { // Cache for 1 minute
             return [
                 'recent_orders' => $this->getRecentOrders(),
                 'recent_payments' => $this->getRecentPayments(),
@@ -47,25 +60,23 @@ class DashboardService
     }
 
     /**
-     * Get current period metrics (last 30 days)
+     * Get current period metrics
      */
-    private function getCurrentPeriodMetrics(): array
+    private function getCurrentPeriodMetrics(Carbon $startDate, Carbon $endDate): array
     {
-        $startDate = Carbon::now()->subDays(30);
-        $endDate = Carbon::now();
-
         return $this->getPeriodMetrics($startDate, $endDate);
     }
 
     /**
-     * Get previous period metrics (30-60 days ago)
+     * Get previous period metrics (same duration as current period, immediately before it)
      */
-    private function getPreviousPeriodMetrics(): array
+    private function getPreviousPeriodMetrics(Carbon $startDate, Carbon $endDate): array
     {
-        $startDate = Carbon::now()->subDays(60);
-        $endDate = Carbon::now()->subDays(30);
+        $daysDiff = $startDate->diffInDays($endDate);
+        $previousStartDate = $startDate->copy()->subDays($daysDiff + 1);
+        $previousEndDate = $startDate->copy()->subSeconds(1);
 
-        return $this->getPeriodMetrics($startDate, $endDate);
+        return $this->getPeriodMetrics($previousStartDate, $previousEndDate);
     }
 
     /**
@@ -189,20 +200,28 @@ class DashboardService
     }
 
     /**
-     * Get data for charts (last 7 days)
+     * Get data for charts
      */
-    private function getChartsData(): array
+    private function getChartsData(Carbon $startDate, Carbon $endDate): array
     {
         $days = collect();
         $ordersData = collect();
         $revenueData = collect();
 
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i);
-            $dayStart = $date->copy()->startOfDay();
-            $dayEnd = $date->copy()->endOfDay();
+        // Determine interval based on date range duration
+        $diffInDays = $startDate->diffInDays($endDate);
+        
+        // If range is large (> 60 days), group by week or month could be better, 
+        // but for now let's stick to daily or limit points if too many.
+        // For simplicity, we'll iterate daily but if > 30 days, maybe we should group?
+        // Let's stick to daily for now as requested.
+        
+        $currentDate = $startDate->copy();
+        while ($currentDate <= $endDate) {
+            $dayStart = $currentDate->copy()->startOfDay();
+            $dayEnd = $currentDate->copy()->endOfDay();
 
-            $days->push($date->format('M j'));
+            $days->push($currentDate->format('M j'));
 
             // Orders count for the day
             $ordersCount = Order::whereBetween('created_at', [$dayStart, $dayEnd])->count();
@@ -213,6 +232,8 @@ class DashboardService
                 ->whereIn('status', ['completed', 'processed'])
                 ->sum('total_amount');
             $revenueData->push(round($revenue, 2));
+            
+            $currentDate->addDay();
         }
 
         return [
@@ -296,7 +317,7 @@ class DashboardService
      */
     public function clearCache(): void
     {
-        Cache::forget('dashboard_metrics');
-        Cache::forget('dashboard_recent_activity');
+        Cache::forget('dashboard_cache_timestamp');
+        Cache::put('dashboard_cache_timestamp', now()->timestamp);
     }
 }
