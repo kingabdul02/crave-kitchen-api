@@ -153,9 +153,16 @@ class OrderController extends BaseApiController
     /**
      * Get order summary statistics.
      */
-    public function summary(): JsonResponse
+    public function summary(Request $request): JsonResponse
     {
-        $summary = $this->orderService->getOrderSummary();
+        $filters = $request->only([
+            'date_from',
+            'date_to',
+            'created_from',
+            'created_to'
+        ]);
+
+        $summary = $this->orderService->getOrderSummary($filters);
 
         return $this->successResponse(
             $summary,
