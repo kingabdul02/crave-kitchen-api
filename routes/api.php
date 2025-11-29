@@ -28,6 +28,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
     });
 
+    // User Profile routes
+    Route::prefix('profile')->group(function () {
+        Route::put('/', [\App\Http\Controllers\UserController::class, 'updateProfile']);
+        Route::put('/password', [\App\Http\Controllers\UserController::class, 'updatePassword']);
+    });
+
     // Legacy user route for compatibility
     Route::get('/user', function (Request $request) {
         return $request->user();
